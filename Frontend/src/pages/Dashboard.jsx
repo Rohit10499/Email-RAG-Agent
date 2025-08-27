@@ -25,10 +25,26 @@
 // export default Dashboard
 
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { CometCard } from "../components/comet-card";
+import API_BASE from "../config";
 
 function Dashboard() {
+  const [status, setStatus] = useState({ status: "loading", metrics: {} });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`${API_BASE}/status`);
+        const data = await res.json();
+        setStatus(data);
+      } catch (e) {
+        setError(String(e));
+      }
+    }
+    load();
+  }, []);
   return (
     <div className="flex flex-col items-center justify-center w-full min-h-screen">
       {/* Dashboard Heading */}
@@ -44,7 +60,9 @@ function Dashboard() {
             <h3 className="text-xl font-semibold text-gray-700">
               Agent Status
             </h3>
-            <p className="text-green-600 font-bold text-2xl mt-2">Idle</p>
+            <p className="text-green-600 font-bold text-2xl mt-2">
+              {status.status === "ok" ? "Online" : status.status}
+            </p>
           </div>
         </CometCard>
 
@@ -54,7 +72,9 @@ function Dashboard() {
             <h3 className="text-xl font-semibold text-gray-700">
               Emails Processed
             </h3>
-            <p className="text-blue-600 font-bold text-2xl mt-2">5</p>
+            <p className="text-blue-600 font-bold text-2xl mt-2">
+              {status.metrics?.runs_sent ?? 0}
+            </p>
           </div>
         </CometCard>
 
@@ -64,10 +84,15 @@ function Dashboard() {
             <h3 className="text-xl font-semibold text-gray-700">
               Pending Emails
             </h3>
-            <p className="text-orange-600 font-bold text-2xl mt-2">2</p>
+            <p className="text-orange-600 font-bold text-2xl mt-2">
+              {status.metrics?.runs_started ?? 0}
+            </p>
           </div>
         </CometCard>
       </div>
+      {error && (
+        <div className="text-red-600 mt-6 text-sm">{error}</div>
+      )}
     </div>
   );
 }

@@ -16,3 +16,6 @@ app/config/credentials.json
 app/config/token.json
 
 node_modules/
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.vite/
