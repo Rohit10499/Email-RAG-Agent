@@ -8,8 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+v2/
 
 .env
 app/config/credentials.json
 app/config/token.json
 
+node_modules/
