@@ -1,9 +1,23 @@
-"""Agent graph runner (Person 3)
-Simple self-contained stub showing control flow for retrieve->draft->validate->rewrite->send/escalate
+"""Agent graph runner (LangGraph-compatible API)
+Simple self-contained runner showing control flow for
+retrieve -> draft -> validate -> (send|escalate|rewrite loop)
+
+This module provides two ways to run the agent:
+- run_agent: a simple imperative flow used by tests
+- build_agent_graph/run_with_graph: a LangGraph-style graph API
 """
 
 import time, json, os
 from typing import Callable, Dict, Any, List, Optional
+
+try:
+    # Soft dependency: only used if user opts into LangGraph
+    from langgraph.graph import StateGraph, END
+    _HAS_LANGGRAPH = True
+except Exception:  # pragma: no cover - tests don’t require langgraph
+    StateGraph = None  # type: ignore
+    END = "__END__"  # type: ignore
+    _HAS_LANGGRAPH = False
 
 from app.models import AgentState
 from app.services import persistence, metrics
@@ -186,3 +200,135 @@ def export_explainability(state: AgentState, out_dir: str = "runs") -> str:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     return path
+
+
+# === Optional: LangGraph builder === #
+
+
+def build_agent_graph(
+    rag_retrieve: Callable[[str, int], List[Dict[str, Any]]],
+    llm_call: Callable[[str], str],
+    validator: Callable[[str, List[Dict[str, Any]]], Dict[str, Any]],
+    gmail_send: Callable[[str, str], str],
+    escalate_handler: Callable[[Dict[str, Any]], str],
+    pii_redactor: Callable[[str], str],
+    prompt_template: str,
+    rewrite_prompt_template: str,
+    *,
+    max_rewrites: Optional[int] = None,
+):
+    """Build a LangGraph StateGraph that mirrors run_agent control-flow.
+
+    Returns a compiled graph if langgraph is installed; otherwise raises ImportError.
+    """
+    if not _HAS_LANGGRAPH:
+        raise ImportError("langgraph is not installed. Add 'langgraph' to dependencies.")
+
+    cfg = get_config()
+    max_rewrites = max_rewrites or cfg.max_rewrites
+    pii_policy = cfg.pii_policy
+
+    def node_retrieve(state: AgentState) -> AgentState:
+        return retrieve_context(state, rag_retrieve)
+
+    def node_draft(state: AgentState) -> AgentState:
+        return draft_reply(state, llm_call, prompt_template)
+
+    def node_validate(state: AgentState) -> AgentState:
+        return validate_reply(state, validator)
+
+    def node_rewrite(state: AgentState) -> AgentState:
+        return rewrite_reply(state, llm_call, rewrite_prompt_template)
+
+    def node_send(state: AgentState) -> AgentState:
+        return send_email(state, gmail_send, pii_redactor)
+
+    def node_escalate(state: AgentState) -> AgentState:
+        return escalate(state, escalate_handler)
+
+    def should_finish(state: AgentState) -> str:
+        """Router after validate: send/escalate or rewrite.
+
+        - if valid -> policy branch to send or escalate
+        - else if reached max rewrites -> escalate
+        - else -> rewrite
+        """
+        result = state.get("validation_result", {})
+        if result.get("is_valid"):
+            return "policy"
+
+        attempts = state.get("rewrite_count", 0)
+        if attempts >= max_rewrites:
+            return "escalate"
+        return "rewrite"
+
+    def follow_policy(state: AgentState) -> str:
+        if pii_policy == "redact_and_send":
+            return "send"
+        if pii_policy == "block_and_escalate":
+            return "escalate"
+        raise ValueError(f"Unknown pii_policy: {pii_policy}")
+
+    graph = StateGraph(dict)  # using plain dict state
+    graph.add_node("retrieve", node_retrieve)
+    graph.add_node("draft", node_draft)
+    graph.add_node("validate", node_validate)
+    graph.add_node("rewrite", node_rewrite)
+    graph.add_node("send", node_send)
+    graph.add_node("escalate", node_escalate)
+
+    graph.set_entry_point("retrieve")
+    graph.add_edge("retrieve", "draft")
+    graph.add_edge("draft", "validate")
+
+    # Router after validate
+    graph.add_conditional_edges(
+        "validate",
+        should_finish,
+        {
+            "policy": "policy_router",
+            "rewrite": "rewrite",
+            "escalate": "escalate",
+        },
+    )
+
+    # A lightweight policy router node implemented via conditional edges
+    graph.add_conditional_edges(
+        "policy_router",
+        follow_policy,
+        {"send": "send", "escalate": "escalate"},
+    )
+
+    # After rewrite, go back to validate
+    graph.add_edge("rewrite", "validate")
+
+    # Terminal nodes
+    graph.add_edge("send", END)
+    graph.add_edge("escalate", END)
+
+    return graph.compile()
+
+
+def run_with_graph(
+    compiled_graph,
+    initial_state: AgentState,
+    run_id: str,
+):
+    """Run the compiled LangGraph with persistence/metrics similar to run_agent.
+
+    This helper ensures we stamp run metadata and persist state transitions.
+    """
+    state = dict(initial_state)
+    state["run_id"] = run_id
+    state["status"] = state.get("status", "pending")
+    _log(state, "run_started", {"run_id": run_id})
+    persistence.save_state(run_id, state)
+
+    for step in compiled_graph.stream(state):  # yields intermediate states
+        # step is a dict-like state; persist incrementally
+        persistence.save_state(run_id, step)
+        state = step
+
+    # Final state is last yielded
+    persistence.save_state(run_id, state)
+    return state

@@ -31,7 +31,8 @@ def strip_html(text: str) -> str:
         .replace("&lt;", "<")
         .replace("&gt;", ">")
     )
-    return unescaped
+    # Collapse whitespace introduced by tag removal and trim
+    return re.sub(r"\s+", " ", unescaped).strip()
 
 
 def _normalize_whitespace(text: str) -> str:

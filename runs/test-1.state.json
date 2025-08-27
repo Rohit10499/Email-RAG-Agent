@@ -1,0 +1,61 @@
+{
+  "email_id": "abc",
+  "email_content": "Please explain baggage policy",
+  "run_id": "test-1",
+  "rewrite_count": 0,
+  "status": "sent",
+  "log": [
+    {
+      "Step": "run_started",
+      "timestamp": 1756289485.8727832,
+      "details": {
+        "run_id": "test-1"
+      }
+    },
+    {
+      "Step": "retrieve_context",
+      "timestamp": 1756289485.8763068,
+      "details": {
+        "doc_ids": [
+          "doc1"
+        ]
+      }
+    },
+    {
+      "Step": "draft_reply",
+      "timestamp": 1756289485.8763068,
+      "details": {
+        "prompt_snippet": "docs=['doc1'] email=Please explain baggage policy"
+      }
+    },
+    {
+      "Step": "validate_reply",
+      "timestamp": 1756289485.8763068,
+      "details": {
+        "result": {
+          "is_valid": true,
+          "reason": "ok"
+        }
+      }
+    },
+    {
+      "Step": "send_email",
+      "timestamp": 1756289485.8763068,
+      "details": {
+        "msg_id": "msg-1"
+      }
+    }
+  ],
+  "retrieved_docs": [
+    {
+      "id": "doc1",
+      "text": "policy A"
+    }
+  ],
+  "draft_reply": "Draft reply",
+  "validation_result": {
+    "is_valid": true,
+    "reason": "ok"
+  },
+  "final_reply": "Draft reply"
+}
