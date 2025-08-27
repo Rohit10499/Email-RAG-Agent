@@ -8,3 +8,5 @@ langchain-community
 faiss-cpu
 sentence-transformers
 langchain-huggingface
+fastapi
+uvicorn
