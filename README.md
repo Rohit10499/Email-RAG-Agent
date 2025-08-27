@@ -33,6 +33,9 @@ app/
 data/
   airlines_policy.md      # Knowledge base (RAG source)
   embeddings/faiss_index/ # FAISS index (auto-created)
+tests/
+  unit/                   # Fast, isolated tests
+  integration/            # Cross-module or IO-simulating tests
 ```
 
 ## Prerequisites
@@ -54,15 +57,12 @@ pip install -r requirements.txt
 ```
 
 ## Configuration
-Create a `.env` file in the repository root (or set env vars another way):
+Create a `.env` file in the repository root (or set env vars another way). See `.env.example` for a complete template:
 ```bash
 GROQ_API_KEY=your_groq_api_key
-```
-
-Agent behavior (optional, via env):
-```bash
-AGENT_MAX_REWRITES=2             # how many validation-driven rewrites
-AGENT_PII_POLICY=redact_and_send # or: block_and_escalate
+LLM_MODEL=llama-3.1-8b-instant
+AGENT_MAX_REWRITES=2
+AGENT_PII_POLICY=redact_and_send
 ```
 
 ### Gmail setup
@@ -118,11 +118,42 @@ state = {
 # See function signatures in app/agent/agent_graph.py
 ```
 
+### LangGraph runner (optional)
+```python
+from app.agent.agent_graph import build_agent_graph, run_with_graph
+
+graph = build_agent_graph(
+    rag_retrieve=..., llm_call=..., validator=...,
+    gmail_send=..., escalate_handler=..., pii_redactor=...,
+    prompt_template="docs={docs} email={email}",
+    rewrite_prompt_template="reason={reason} draft={draft}",
+)
+final_state = run_with_graph(graph, {"email_id": "e1", "email_content": "hello"}, run_id="demo")
+```
+
 ## Troubleshooting
 - Import errors: ensure you import with `app.*` package paths.
 - Missing FAISS index: first retrieval builds it automatically.
 - Groq errors: verify `GROQ_API_KEY` and network connectivity.
 - Gmail auth errors: confirm `credentials.json` location and re-run to refresh `token.json`.
+
+## Team alignment and branching guidance
+
+- Test consolidation: tests are now under `tests/unit` and `tests/integration`. Remove any old top-level test files in your feature branches to avoid conflicts.
+- Added LangGraph support in `app/agent/agent_graph.py`. If your branch changed this file, rebase and resolve by keeping both `run_agent` and the new `build_agent_graph`/`run_with_graph` APIs.
+- New dependency: `langgraph`. If using pip, ensure requirements are up to date: `pip install -r requirements.txt`.
+- Package manager differences:
+  - If using uv: `uv sync` uses `pyproject.toml` and `uv.lock`.
+  - If using pip: ignore `uv.lock` and rely on `requirements.txt`. We keep both files consistent.
+- Recommended update sequence for feature branches:
+  1) `git fetch origin && git checkout <your-branch> && git rebase origin/main`
+  2) Delete or move any tests that still live at `tests/` root into `tests/unit` or `tests/integration`.
+  3) Ensure your virtualenv has new deps: `pip install -r requirements.txt` (pip) or `uv sync` (uv).
+  4) Run `pytest -q` and fix any local conflicts.
+
+## Repository housekeeping
+
+- Single README policy: folder-level READMEs were merged into root. `tests/README.md` test-running notes are condensed here. If you add docs inside subfolders, consider linking them here instead.
 
 ## License
 MIT

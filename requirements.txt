@@ -5,6 +5,7 @@ google-api-python-client
 groq
 langchain
 langchain-community
+langgraph
 faiss-cpu
 sentence-transformers
 langchain-huggingface

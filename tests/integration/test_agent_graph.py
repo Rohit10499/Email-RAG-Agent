@@ -2,7 +2,6 @@ from app.agent.agent_graph import run_agent
 
 
 def test_run_agent_happy_path(tmp_path, monkeypatch):
-    # Fakes
     def fake_rag_retrieve(query: str, top_k: int = 5):
         return [{"id": "doc1", "text": "policy A"}]
 
@@ -25,7 +24,6 @@ def test_run_agent_happy_path(tmp_path, monkeypatch):
     def fake_pii_redactor(text: str) -> str:
         return text
 
-    # Run
     state = {
         "email_id": "abc",
         "email_content": "Please explain baggage policy"
@@ -48,5 +46,6 @@ def test_run_agent_happy_path(tmp_path, monkeypatch):
     assert out["status"] == "sent"
     assert out["final_reply"] == "Draft reply"
     assert sent["email_id"] == "abc"
+
 
 

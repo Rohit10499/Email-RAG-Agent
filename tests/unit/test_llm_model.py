@@ -1,6 +1,4 @@
-import os
 import types
-import builtins
 
 
 def test_llm_generate_response_env_default(monkeypatch):
@@ -31,5 +29,6 @@ def test_llm_generate_response_env_default(monkeypatch):
 
     out = m.generate_response("hello")
     assert out == "ok"
+
 
 

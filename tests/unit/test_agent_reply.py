@@ -18,3 +18,4 @@ def test_draft_reply_wires_prompt(monkeypatch):
     assert 'CTX' in captured['prompt']
 
 
+

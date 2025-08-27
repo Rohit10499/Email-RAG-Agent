@@ -1,4 +1,3 @@
-import json
 import os
 
 
@@ -42,5 +41,6 @@ def test_metrics_counters():
         "rewrite_attempts",
     ]:
         assert after[k] == before.get(k, 0) + 1
+
 
 
