@@ -9,13 +9,10 @@ from app.services.email_service import fetch_and_reply_emails
 
 app = FastAPI(title="Email RAG Agent API")
 
-# CORS for local Vite dev server
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
