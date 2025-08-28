@@ -23,7 +23,7 @@ import Escalations from "./Escalations";
 import Analytics from "./Analytics";
 import Settings from "./Settings";
 
-export function SidebarDemo() {
+export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(true);
@@ -156,4 +156,4 @@ export const LogoIcon = () => {
   );
 };
 
-export default SidebarDemo;
+export default Sidebar;

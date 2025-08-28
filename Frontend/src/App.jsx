@@ -6,7 +6,7 @@ import History from './pages/History'
 import Escalations from './pages/Escalations'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
-import {SidebarDemo} from './pages/Sidebar'
+import {Sidebar} from './pages/Sidebar'
 
 
 const navItems = [
@@ -23,7 +23,7 @@ function App() {
 
   return (
     <>
-    <SidebarDemo/>
+    <Sidebar/>
     
     </>
   )
