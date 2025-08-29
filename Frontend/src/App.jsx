@@ -6,7 +6,7 @@ import History from './pages/History'
 import Escalations from './pages/Escalations'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
-import {Sidebar} from './pages/Sidebar'
+import {SidebarLogic} from './pages/Sidebar'
 
 
 const navItems = [

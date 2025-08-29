@@ -23,7 +23,7 @@ import Escalations from "./Escalations";
 import Analytics from "./Analytics";
 import Settings from "./Settings";
 
-export function Sidebar() {
+export function SidebarLogic() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(true);
