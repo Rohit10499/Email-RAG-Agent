@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import API_BASE from '../config'
+import config from '../config'
 
 function History() {
   const [history, setHistory] = useState([])
@@ -9,13 +9,11 @@ function History() {
   useEffect(() => {
     async function loadHistory() {
       try {
-        const res = await fetch(`${API_BASE}/email/history`)
+        const res = await fetch(`${config.API_BASE}/email/history`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
-        if (data.status === 'success') {
-          setHistory(data.history || [])
-        } else {
-          setError(data.message || 'Failed to load history')
-        }
+        // Backend returns array directly, not {"status": "success", "history": [...]}
+        setHistory(Array.isArray(data) ? data : [])
       } catch (e) {
         setError(String(e))
       } finally {
@@ -65,14 +63,14 @@ function History() {
             ) : (
               <div className="space-y-4">
                 {history.map((item, index) => (
-                  <div key={item.run_id || index} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div key={item.id || index} className="border rounded-lg p-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900">
-                          ID: {item.run_id}
+                          ID: {item.id}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                          {item.status}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.validation_result?.is_valid ? 'sent' : 'escalated')}`}>
+                          {item.validation_result?.is_valid ? 'Sent' : 'Escalated'}
                         </span>
                       </div>
                       <span className="text-sm text-gray-500">
@@ -81,6 +79,8 @@ function History() {
                     </div>
                     
                     <div className="mb-3">
+                      <div className="text-sm font-medium text-gray-700 mb-1">From: {item.original_sender}</div>
+                      <div className="text-sm font-medium text-gray-700 mb-1">Subject: {item.subject}</div>
                       <div className="text-sm font-medium text-gray-700 mb-1">Original Email:</div>
                       <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
                         {item.email_content || 'No content'}
@@ -96,9 +96,9 @@ function History() {
                       </div>
                     )}
                     
-                    {item.rewrite_count > 0 && (
+                    {item.validation_result?.reason && (
                       <div className="text-xs text-orange-600">
-                        Rewrites: {item.rewrite_count}
+                        Reason: {item.validation_result.reason}
                       </div>
                     )}
                   </div>

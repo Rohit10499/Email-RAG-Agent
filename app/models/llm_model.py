@@ -12,6 +12,11 @@ def get_llm():
 
 # Generate response
 def generate_response(prompt, model=os.environ['LLM_MODEL'], temperature=0.3, max_tokens=512):
+    if model is None:
+        model = os.environ['LLM_MODEL']
+        if not model:
+            raise ValueError("LLM_MODEL not set in environment variables")
+    
     client = get_llm()
     response = client.chat.completions.create(
         model=model,

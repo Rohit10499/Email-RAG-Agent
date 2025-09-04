@@ -19,14 +19,7 @@ const navItems = [
 ]
 
 function App() {
-  const location = useLocation()
-
-  return (
-    <>
-    <Sidebar/>
-    
-    </>
-  )
+  return <SidebarLogic />
 }
 
 export default App

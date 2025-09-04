@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Switch } from "@/components/ui/switch"; // shadcn/ui switch
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Switch } from "../ui/switch"; // shadcn/ui switch
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import config from "../config";
 
 function Settings() {
   const [settings, setSettings] = useState({
@@ -9,16 +10,19 @@ function Settings() {
     auto_reply: false,
   });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   // Fetch settings from backend
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("http://localhost:8000/settings"); // backend endpoint
+        const res = await fetch(`${config.API_BASE}/settings`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setSettings(data);
-      } catch (error) {
-        console.error("Error fetching settings:", error);
+      } catch (err) {
+        setError(err.message || "Error fetching settings");
       } finally {
         setLoading(false);
       }
@@ -32,19 +36,23 @@ function Settings() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch("http://localhost:8000/settings", {
-        method: "POST", // if you later add POST support in backend
+      setSaving(true);
+      setError("");
+      const res = await fetch(`${config.API_BASE}/settings`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
       if (res.ok) {
         alert("✅ Settings saved successfully!");
       } else {
-        alert("❌ Failed to save settings");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || "Failed to save settings");
       }
-    } catch (error) {
-      console.error("Save error:", error);
-      alert("❌ Error saving settings");
+    } catch (err) {
+      setError(err.message || "Error saving settings");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -75,12 +83,15 @@ function Settings() {
             />
           </div>
 
+          {error && <div className="text-sm text-red-600">{error}</div>}
+
           <Button
             className="w-full mt-4"
             variant="default"
             onClick={handleSave}
+            disabled={saving}
           >
-            Save Settings
+            {saving ? "Saving..." : "Save Settings"}
           </Button>
         </CardContent>
       </Card>

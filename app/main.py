@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from collections import Counter
 
@@ -19,7 +19,7 @@ app = FastAPI(title="Email RAG Agent API")
 # --- CORS Middleware (Crucial for Frontend Communication) ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Frontend URLs
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,8 +76,31 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Ensure DB is initialised when the app starts
+def add_sample_data():
+    conn = sqlite3.connect("data/sqlite.db3")
+    cursor = conn.cursor()
+    
+    sample_data = [
+        ("john@example.com", "Project Update", "Hi, can you provide an update on the project status?", "Thanks for reaching out. The project is on track and we expect completion by Friday.", "Thanks for reaching out. The project is on track and we expect completion by Friday.", 1, "Valid response", (datetime.now() - timedelta(days=2)).isoformat()),
+        ("sarah@company.com", "Meeting Request", "Would you be available for a meeting next week?", "I'm available Tuesday and Wednesday next week. Please let me know what works best.", "I'm available Tuesday and Wednesday next week. Please let me know what works best.", 1, "Valid response", (datetime.now() - timedelta(days=1)).isoformat()),
+        ("client@business.com", "Invoice Question", "I have questions about the recent invoice.", "This requires detailed financial information that I cannot provide.", "This requires detailed financial information that I cannot provide.", 0, "Escalated - financial inquiry", datetime.now().isoformat()),
+        ("support@vendor.com", "Technical Issue", "We're experiencing issues with the API integration.", "Let me connect you with our technical team for assistance.", "Let me connect you with our technical team for assistance.", 0, "Escalated - technical issue", datetime.now().isoformat()),
+        ("mary@client.com", "Thank You", "Thank you for the quick response on our request!", "You're welcome! Please don't hesitate to reach out if you need anything else.", "You're welcome! Please don't hesitate to reach out if you need anything else.", 1, "Valid response", (datetime.now() - timedelta(hours=6)).isoformat())
+    ]
+    
+    cursor.executemany("""
+        INSERT INTO email_logs (original_sender, subject, email_content, draft_reply, final_reply, validation_is_valid, validation_reason, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, sample_data)
+    
+    conn.commit()
+    conn.close()
+    print(f"Added {len(sample_data)} sample email logs")
+
+# Ensure DB is initialised when the app starts and dummy data is added to it
 init_db()
+add_sample_data()
+
 
 # --- Pydantic Models for Request/Response Validation ---
 
@@ -120,10 +143,10 @@ def get_status():
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM email_logs")
-    processed_count = cursor.fetchone()
+    processed_count = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM email_logs WHERE validation_is_valid = 0")
-    escalated_count = cursor.fetchone() # Considered pending if escalated for human review
+    escalated_count = cursor.fetchone()[0] # Considered pending if escalated for human review
 
     conn.close()
     return {
@@ -185,7 +208,7 @@ def get_logs(
         ).dict())
     return logs
 
-@app.get("/history", response_model=List[EmailLogResponse], tags=["Frontend"])
+@app.get("/email/history", response_model=List[EmailLogResponse], tags=["Frontend"])
 def get_history(
     query: Optional[str] = Query(None, description="Keyword to search in email content or subject"),
     sender: Optional[str] = Query(None, description="Filter by sender email"),
@@ -198,7 +221,7 @@ def get_history(
     # Reuses the logic from get_logs, just with a different default limit
     return get_logs(query, sender, start_date, end_date, limit, offset)
 
-@app.get("/escalations", response_model=List[EmailLogResponse], tags=["Frontend"])
+@app.get("/email/escalations", response_model=List[EmailLogResponse], tags=["Frontend"])
 def get_escalations():
     """Retrieves only escalated emails from the database."""
     conn = get_db_connection()
@@ -231,10 +254,10 @@ def get_analytics():
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM email_logs")
-    total_emails = cursor.fetchone()
+    total_emails = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM email_logs WHERE validation_is_valid = 1")
-    answered_emails = cursor.fetchone()
+    answered_emails = cursor.fetchone()[0]
 
     escalated_emails = total_emails - answered_emails
 
