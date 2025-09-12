@@ -2,3 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens */
+:root {
+  color-scheme: light dark;
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-contrast: #ffffff;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.1);
+
+  /* Chart palette */
+  --chart-1: #2563eb;
+  --chart-2: #16a34a;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #7c3aed;
+
+  --ring: 0 0 0 3px rgba(37,99,235,.25);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1020;
+  --surface: #0f1629;
+  --surface-2: #111a31;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border: #1f2a44;
+  --primary: #60a5fa;
+  --primary-contrast: #0b1020;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 16px rgba(0,0,0,.35);
+
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #a78bfa;
+}
+
+/* Global background/text with smooth transition */
+html, body, #root {
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+}
+
+/* Inputs focus ring */
+:where(input, select, textarea, button):focus {
+  outline: none;
+  box-shadow: var(--ring);
+}
+

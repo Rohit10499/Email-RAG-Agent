@@ -6,7 +6,7 @@ import History from './pages/History'
 import Escalations from './pages/Escalations'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
-import {SidebarDemo} from './pages/Sidebar'
+import {SidebarLogic} from './pages/Sidebar'
 
 
 const navItems = [
@@ -19,14 +19,7 @@ const navItems = [
 ]
 
 function App() {
-  const location = useLocation()
-
-  return (
-    <>
-    <SidebarDemo/>
-    
-    </>
-  )
+  return <SidebarLogic />
 }
 
 export default App

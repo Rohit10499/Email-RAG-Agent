@@ -19,4 +19,5 @@ dependencies = [
     "uvicorn>=0.30.0",
     "pytest>=8.4.1",
     "langgraph>=0.6.6",
+    "axios>=0.4.0",
 ]

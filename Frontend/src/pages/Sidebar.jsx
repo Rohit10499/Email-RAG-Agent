@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "../components/sidebar";
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
+import { useTheme } from "../theme/ThemeProvider";
+import { IconMoon, IconSun } from "@tabler/icons-react";
 import {
   IconBrandTabler,
   IconSettings,
@@ -23,10 +25,12 @@ import Escalations from "./Escalations";
 import Analytics from "./Analytics";
 import Settings from "./Settings";
 
-export function SidebarDemo() {
+export function SidebarLogic() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [open, setOpen] = useState(true);
+  // Fixed sidebar (no dynamic open/close)
+  const open = true;
+  const { theme, toggleTheme } = useTheme();
 
   // All navigation items (from App.jsx merged here)
   const links = [
@@ -55,22 +59,19 @@ export function SidebarDemo() {
       href: "/analytics",
       icon: <IconReportAnalytics className="h-5 w-5 shrink-0" />,
     },
-    {
-      label: "Settings",
-      href: "/settings",
-      icon: <IconSettings className="h-5 w-5 shrink-0" />,
-    },
   ];
 
   return (
     <div
     className={cn(
-    "flex w-full flex-1 overflow-hidden rounded-md border border-neutral-200 bg-gray-100 md:flex-row dark:border-neutral-700 dark:bg-neutral-800",
-    "h-screen"
-  )}
+      "flex w-full flex-1 overflow-hidden md:flex-row",
+      "rounded-md border border-[var(--border)] bg-[var(--bg)]",
+      "h-screen"
+   )}
     >
       {/* Sidebar */}
-      <Sidebar open={open} setOpen={setOpen}>
+      {/* Pass animate={false} to keep width fixed and labels visible */}
+      <Sidebar open={open} animate={false}>
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             {open ? <Logo /> : <LogoIcon />}
@@ -81,37 +82,51 @@ export function SidebarDemo() {
                   onClick={() => navigate(link.href)}
                   className={`cursor-pointer ${
                     location.pathname === link.href
-                      ? "bg-orange-500 text-white rounded-md shadow-md"
-                      : "hover:bg-yellow-400 hover:text-black rounded-md"
+                      ? "bg-[var(--primary)] text-[var(--primary-contrast)] rounded-md shadow-md"
+                      : "hover:bg-[var(--surface-2)] hover:text-[var(--text)] rounded-md"
                   }`}
                 >
                   <SidebarLink link={link} />
                 </div>
               ))}
+              <div className="flex flex-col gap-3 mt-6">
+                {/* Theme toggle */}
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)]">
+                  <span className="text-sm text-[var(--text-muted)]">
+                    {theme === 'dark' ? 'Dark mode' : 'Light mode'}
+                  </span>
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-md border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)] transition"
+                    aria-label="Toggle theme"
+                    title="Toggle theme"
+                  >
+                    {theme === 'dark' ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />}
+                  </button>
+                </div>
+                <SidebarLink
+                  link={{
+                    label: "Admin",
+                    href: "/settings", // <-- Change this from "#" to "/settings"
+                    icon: (
+                      <img
+                        src="https://assets.aceternity.com/manu.png"
+                        className="h-7 w-7 shrink-0 rounded-full"
+                        width={50}
+                        height={50}
+                        alt="Avatar"
+                      />
+                    ),
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          <div>
-            <SidebarLink
-              link={{
-                label: "Admin",
-                href: "#",
-                icon: (
-                  <img
-                    src="https://assets.aceternity.com/manu.png"
-                    className="h-7 w-7 shrink-0 rounded-full"
-                    width={50}
-                    height={50}
-                    alt="Avatar"
-                  />
-                ),
-              }}
-            />
           </div>
         </SidebarBody>
       </Sidebar>
 
       {/* Main content routes */}
-      <div className="flex flex-1 p-6 overflow-y-auto bg-yellow-50">
+      <div className="flex flex-1 p-6 overflow-y-auto bg-[var(--bg)]">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/logs" element={<Logs />} />
@@ -119,6 +134,8 @@ export function SidebarDemo() {
           <Route path="/escalations" element={<Escalations />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          {/* Redirect all unknown routes to dashboard */}
+          <Route path="*" element={<Dashboard />} />
         </Routes>
       </div>
     </div>
@@ -156,4 +173,4 @@ export const LogoIcon = () => {
   );
 };
 
-export default SidebarDemo;
+export default SidebarLogic;
